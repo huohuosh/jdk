@@ -912,6 +912,11 @@ reg_class v5_reg(
 
 // class for condition codes
 reg_class reg_flags(RFLAGS);
+
+// Class for all RVV predicate registers.
+reg_class pr_reg (
+    V0
+);
 %}
 
 //----------DEFINITION BLOCK---------------------------------------------------
@@ -1642,7 +1647,7 @@ uint MachSpillCopyNode::implementation(CodeBuffer *cbuf, PhaseRegAlloc *ra_, boo
     } else {
       st->print("%s", Matcher::regName[dst_lo]);
     }
-    if (bottom_type()->isa_vect() != NULL) {
+    if (bottom_type()->isa_vect() && !bottom_type()->isa_vectmask()) {
       int vsize = 0;
       if (ideal_reg() == Op_VecA) {
         vsize = Matcher::scalable_vector_reg_size(T_BYTE) * 8;
@@ -1869,7 +1874,17 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
 }
 
 const bool Matcher::match_rule_supported_vector_masked(int opcode, int vlen, BasicType bt) {
-  return false;
+  if (!UseRVV) {
+    return false;
+  }
+  switch (opcode) {
+    case Op_AddVI:
+    case Op_LoadVectorMasked:
+    case Op_VectorLoadMask:
+      return true;
+    default:
+      return false;
+  }
 }
 
 const bool Matcher::vector_needs_partial_operations(Node* node, const TypeVect* vt) {
@@ -1877,11 +1892,11 @@ const bool Matcher::vector_needs_partial_operations(Node* node, const TypeVect* 
 }
 
 const RegMask* Matcher::predicate_reg_mask(void) {
-  return NULL;
+  return &_PR_REG_mask;
 }
 
 const TypeVectMask* Matcher::predicate_reg_type(const Type* elemTy, int length) {
-  return NULL;
+  return new TypeVectMask(elemTy, length);
 }
 
 // Vector calling convention not yet implemented.
@@ -3499,6 +3514,15 @@ operand vReg()
 %{
   constraint(ALLOC_IN_RC(vectora_reg));
   match(VecA);
+  op_cost(0);
+  format %{ %}
+  interface(REG_INTER);
+%}
+
+operand pRegGov()
+%{
+  constraint(ALLOC_IN_RC(pr_reg));
+  match(RegVectMask);
   op_cost(0);
   format %{ %}
   interface(REG_INTER);

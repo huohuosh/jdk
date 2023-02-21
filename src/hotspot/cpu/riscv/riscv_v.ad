@@ -75,7 +75,6 @@ source %{
       case Op_VectorCastL2X:
       case Op_VectorCastS2X:
       case Op_VectorInsert:
-      case Op_VectorLoadMask:
       case Op_VectorLoadShuffle:
       case Op_VectorMaskCmp:
       case Op_VectorRearrange:
@@ -119,6 +118,18 @@ instruct storeV(vReg src, vmemA mem) %{
     VectorRegister src_reg = as_VectorRegister($src$$reg);
     loadStore(C2_MacroAssembler(&cbuf), true, src_reg,
               Matcher::vector_element_basic_type(this, $src), as_Register($mem$$base), Matcher::vector_length_in_bytes(this, $src));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vloadmask(pRegGov dst, vReg src, rFlagsReg cr) %{
+  match(Set dst (VectorLoadMask src));
+  format %{ "vloadmask $dst, $src\t# KILL cr" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this, $src);
+    Assembler::SEW sew = Assembler::elemtype_to_sew(bt);
+    __ vsetvli(t0, x0, sew);
+    __ vmsne_vx(v0, as_VectorRegister($src$$reg), x0);
   %}
   ins_pipe(pipe_slow);
 %}
@@ -279,6 +290,86 @@ instruct vaddD(vReg dst, vReg src1, vReg src2) %{
     __ vfadd_vv(as_VectorRegister($dst$$reg),
                 as_VectorRegister($src1$$reg),
                 as_VectorRegister($src2$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+// vector add - predicated
+
+instruct vaddB_masked(vReg dst_src1, vReg src2, pRegGov mask) %{
+  match(Set dst_src1 (AddVB (Binary dst_src1 src2) mask));
+  ins_cost(VEC_COST);
+  format %{ "vadd.vv $dst_src1, $src2, $mask\t#@vaddB_masked" %}
+  ins_encode %{
+    __ rvv_vsetvli(T_BYTE, Matcher::vector_length_in_bytes(this));
+    __ vadd_vv(as_VectorRegister($dst_src1$$reg),
+               as_VectorRegister($dst_src1$$reg),
+               as_VectorRegister($src2$$reg), Assembler::v0_t);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vaddS_masked(vReg dst_src1, vReg src2, pRegGov mask) %{
+  match(Set dst_src1 (AddVS (Binary dst_src1 src2) mask));
+  ins_cost(VEC_COST);
+  format %{ "vadd.vv $dst_src1, $src2, $mask\t#@vaddS_masked" %}
+  ins_encode %{
+    __ rvv_vsetvli(T_SHORT, Matcher::vector_length_in_bytes(this));
+    __ vadd_vv(as_VectorRegister($dst_src1$$reg),
+               as_VectorRegister($dst_src1$$reg),
+               as_VectorRegister($src2$$reg), Assembler::v0_t);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vaddI_masked(vReg dst_src1, vReg src2, pRegGov mask) %{
+  match(Set dst_src1 (AddVI (Binary dst_src1 src2) mask));
+  ins_cost(VEC_COST);
+  format %{ "vadd.vv $dst_src1, $src2, $mask\t#@vaddI_masked" %}
+  ins_encode %{
+    __ rvv_vsetvli(T_INT, Matcher::vector_length_in_bytes(this));
+    __ vadd_vv(as_VectorRegister($dst_src1$$reg),
+               as_VectorRegister($dst_src1$$reg),
+               as_VectorRegister($src2$$reg), Assembler::v0_t);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vaddL_masked(vReg dst_src1, vReg src2, pRegGov mask) %{
+  match(Set dst_src1 (AddVL (Binary dst_src1 src2) mask));
+  ins_cost(VEC_COST);
+  format %{ "vadd.vv $dst_src1, $src2, $mask\t#@vaddL_masked" %}
+  ins_encode %{
+    __ rvv_vsetvli(T_LONG, Matcher::vector_length_in_bytes(this));
+    __ vadd_vv(as_VectorRegister($dst_src1$$reg),
+               as_VectorRegister($dst_src1$$reg),
+               as_VectorRegister($src2$$reg), Assembler::v0_t);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vaddF_masked(vReg dst_src1, vReg src2, pRegGov mask) %{
+  match(Set dst_src1 (AddVF (Binary dst_src1 src2) mask));
+  ins_cost(VEC_COST);
+  format %{ "vfadd.vv $dst_src1, $src2, $mask\t#@vaddF_masked" %}
+  ins_encode %{
+    __ rvv_vsetvli(T_FLOAT, Matcher::vector_length_in_bytes(this));
+    __ vfadd_vv(as_VectorRegister($dst_src1$$reg),
+                as_VectorRegister($dst_src1$$reg),
+                as_VectorRegister($src2$$reg), Assembler::v0_t);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vaddD_masked(vReg dst_src1, vReg src2, pRegGov mask) %{
+  match(Set dst_src1 (AddVD (Binary dst_src1 src2) mask));
+  ins_cost(VEC_COST);
+  format %{ "vfadd.vv $dst_src1, $src2, $mask\t#@vaddD_masked" %}
+  ins_encode %{
+    __ rvv_vsetvli(T_DOUBLE, Matcher::vector_length_in_bytes(this));
+    __ vfadd_vv(as_VectorRegister($dst_src1$$reg),
+                as_VectorRegister($dst_src1$$reg),
+                as_VectorRegister($src2$$reg), Assembler::v0_t);
   %}
   ins_pipe(pipe_slow);
 %}
