@@ -1878,8 +1878,26 @@ const bool Matcher::match_rule_supported_vector_masked(int opcode, int vlen, Bas
     return false;
   }
   switch (opcode) {
+    case Op_AddVB:
+    case Op_AddVS:
     case Op_AddVI:
-    case Op_LoadVectorMasked:
+    case Op_AddVL:
+    case Op_AddVF:
+    case Op_AddVD:
+    case Op_SubVB:
+    case Op_SubVS:
+    case Op_SubVI:
+    case Op_SubVL:
+    case Op_SubVF:
+    case Op_SubVD:
+    case Op_MulVB:
+    case Op_MulVS:
+    case Op_MulVI:
+    case Op_MulVL:
+    case Op_MulVF:
+    case Op_MulVD:
+    case Op_DivVF:
+    case Op_DivVD:
     case Op_VectorLoadMask:
       return true;
     default:
