@@ -914,7 +914,7 @@ reg_class v5_reg(
 reg_class reg_flags(RFLAGS);
 
 // Class for all RVV predicate registers.
-reg_class pr_reg (
+reg_class vectmask_reg (
     V0
 );
 %}
@@ -1910,7 +1910,7 @@ const bool Matcher::vector_needs_partial_operations(Node* node, const TypeVect* 
 }
 
 const RegMask* Matcher::predicate_reg_mask(void) {
-  return &_PR_REG_mask;
+  return &_VECTMASK_REG_mask;
 }
 
 const TypeVectMask* Matcher::predicate_reg_type(const Type* elemTy, int length) {
@@ -3537,9 +3537,11 @@ operand vReg()
   interface(REG_INTER);
 %}
 
-operand pRegGov()
+// The mask value used to control execution of a masked
+// vector instruction is always supplied by vector register v0.
+operand vReg_V0()
 %{
-  constraint(ALLOC_IN_RC(pr_reg));
+  constraint(ALLOC_IN_RC(vectmask_reg));
   match(RegVectMask);
   op_cost(0);
   format %{ %}
