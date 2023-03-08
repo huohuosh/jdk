@@ -73,6 +73,8 @@ public interface TransferQueue<E> extends BlockingQueue<E> {
      * if there exists a consumer already waiting to receive it (in
      * {@link #take} or timed {@link #poll(long,TimeUnit) poll}),
      * otherwise returning {@code false} without enqueuing the element.
+     * 该方入队元素后，无论是否消费都立即返回
+     * 如果没有消费者接收元素，则元素不入队，返回的是 false
      *
      * @param e the element to transfer
      * @return {@code true} if the element was transferred, else
@@ -92,6 +94,7 @@ public interface TransferQueue<E> extends BlockingQueue<E> {
      * if there exists a consumer already waiting to receive it (in
      * {@link #take} or timed {@link #poll(long,TimeUnit) poll}),
      * else waits until the element is received by a consumer.
+     * 该方法放入元素后，一定要被消费者消费后，线程才释放，否则会一直堵塞
      *
      * @param e the element to transfer
      * @throws InterruptedException if interrupted while waiting,
@@ -114,6 +117,8 @@ public interface TransferQueue<E> extends BlockingQueue<E> {
      * else waits until the element is received by a consumer,
      * returning {@code false} if the specified wait time elapses
      * before the element can be transferred.
+     * 该方法加入了时间等待，假设超过时间没有消费者线程接收
+     * 则元素不会入队，并返回false
      *
      * @param e the element to transfer
      * @param timeout how long to wait before giving up, in units of
@@ -139,6 +144,7 @@ public interface TransferQueue<E> extends BlockingQueue<E> {
      * to receive an element via {@link #take} or
      * timed {@link #poll(long,TimeUnit) poll}.
      * The return value represents a momentary state of affairs.
+     * 判断是否有等待中的客户端线程
      *
      * @return {@code true} if there is at least one waiting consumer
      */
@@ -154,6 +160,7 @@ public interface TransferQueue<E> extends BlockingQueue<E> {
      * not for synchronization control.  Implementations of this
      * method are likely to be noticeably slower than those for
      * {@link #hasWaitingConsumer}.
+     * 获取等待接收元素的消费者数量（瞬间状态的近似值）
      *
      * @return the number of consumers waiting to receive elements
      */
